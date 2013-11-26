@@ -1,4 +1,4 @@
-mongo-lite
+mongo-gyro
 ==========
 
 Lite weight mongo wrapper
