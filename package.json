@@ -4,8 +4,7 @@
   "description": "A lightweight wrapper for MongoDB using promises",
   "main": "mongo.js",
   "scripts": {
-    "test": "mocha -R spec test/index.js",
-    "doc": "groc -o docs --verbose dialects/base/collection.js dialects/**/*.js plugins/*.js bookshelf.js"
+    "test": "mocha -R spec test/index.js"
   },
   "homepage": "https://github.com/airbrite/mongo-gyro",
   "repository": {
@@ -31,8 +30,7 @@
     "sinon-chai": "~2.4.0",
     "sinon": "~1.7.3",
     "cli-color": "*",
-    "groc": "*",
-    "pygmentize": "*"
+    "groc": "*"
   },
   "author": {
     "name": "David Badley",
