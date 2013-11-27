@@ -14,12 +14,13 @@ Promise.promisifyAll(MongoClient);
 
 // Takes url to a mongodb
 var Mongo = module.exports = function(url, options) {
-  options || (options = {});
+  this.options = options || {};
 
   this.client = MongoClient;
   this.url = url || "mongodb://localhost:27017";
   this._db = null;
-  this.reconnectTimeout = options.reconnectTimeout || 5000;
+  // reconnects after 5 seconds by default
+  this.reconnectTimeout = this.options.reconnectTimeout || 5000;
   this.connected = false;
 };
 
@@ -31,7 +32,7 @@ _.extend(Mongo.prototype, {
           return this._db;
         }
 
-        return this.client.connectAsync(this.url);
+        return this.client.connectAsync(this.url, this.options);
       })
       .then(function(db) {
         this._db = db;
@@ -54,11 +55,12 @@ _.extend(Mongo.prototype, {
   }),
 
   setupEvents: function() {
-    this._db.on('close', function() {
+    this._db.setMaxListeners(100);
+    this._db.once('close', function() {
       this.connected = false;
     }.bind(this));
 
-    this._db.on('reconnect', function() {
+    this._db.once('reconnect', function() {
       this.connected = true;
     }.bind(this));
   },
@@ -169,9 +171,11 @@ _.extend(Mongo.prototype, {
       .bind(this)
       .then(function() {
         return this._cursor(collectionName, query, options);
-      }).then(function(cursor) {
+      })
+      .then(function(cursor) {
         return cursor.toArrayAsync();
-      });
+      })
+      .then(this.uncast);
   },
 
   // Find a single doc matching query
@@ -183,11 +187,7 @@ _.extend(Mongo.prototype, {
       .then(function(collection) {
         return collection.findOneAsync(query);
       })
-      .then(function(object) {
-        // this comes back as a singular, but we always expect an array
-        object = this.uncast([object]);
-        return object;
-      });
+      .then(this.uncast);
   },
 
   // Insert a document (safe: true)
@@ -200,10 +200,7 @@ _.extend(Mongo.prototype, {
       .then(function(collection) {
         return collection.insertAsync(obj, options);
       })
-      .then(function(object) {
-        object = this.uncast(object);
-        return object;
-      });
+      .then(this.uncast);
   },
 
   // Update one or more docs
@@ -223,19 +220,28 @@ _.extend(Mongo.prototype, {
   findAndModify: function(collectionName, query, obj, options) {
     query = this.cast(query);
     obj = this.cast(obj);
+    options = _.extend({ new: true, safe: true }, options || {}); // force new mode, safe mode
+
 
     var sort = options.sort || {};
     delete options.sort;
 
-    options = _.extend({ new: true, safe: true }, options || {}); // force new mode, safe mode
     return this.collection(collectionName)
       .bind(this)
       .then(function(collection) {
         return collection.findAndModifyAsync(query, sort, obj, options);
       })
-      .then(function(object) {
-        object = this.uncast(object);
-        return object;
+      .then(function(response) {
+        // mongodb gives the response as the object [0] and updateObject[1]
+        response.pop(); // pop off updateObject
+
+        // it could also be a multiupdate -- if it is, return response as array
+        if(options.multi) {
+          return this.uncast(response);
+        } else {
+        // if not, what eves
+          return this.uncast(response[0]);
+        }
       });
   },
 
@@ -260,10 +266,7 @@ _.extend(Mongo.prototype, {
       .then(function(collection) {
         return collection.aggregateAsync(query);
       })
-      .then(function(object) {
-        object = this.uncast(object);
-        return object;
-      });
+      .then(this.uncast);
   },
 
   // Erases all records from a collection, if any
@@ -272,10 +275,11 @@ _.extend(Mongo.prototype, {
   },
 
   // Get next sequence for counter
-  getNextSequence: function(collectionName, query) {
+  getNextSequence: function(collectionName, query, options) {
     query = this.cast(query);
+    options = _.extend({ safe: true, new: true }, options || {}); 
 
-    return this.findAndModify(collectionName, query, {"$inc": {seq: 1}}, {new: true})
+    return this.findAndModify(collectionName, query, {"$inc": {seq: 1}}, options)
       .then(function(obj) {
         return obj.seq;
       });
@@ -290,11 +294,11 @@ _.extend(Mongo.prototype, {
       });
   },
 
-  dropIndexes: function(collectionName, callback) {
+  dropIndexes: function(collectionName) {
     return this.collection(collectionName)
       .bind(this)
       .then(function(collection) {
-        return collection.dropIndexesAsync(callback);
+        return collection.dropIndexesAsync();
       });
   }
 
