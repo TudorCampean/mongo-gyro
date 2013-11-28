@@ -1,6 +1,7 @@
 var _          = require('lodash');
 var Promise = require('bluebird/js/main/promise')();
 
+var EventEmitter   = require('events').EventEmitter;
 var MongoClient    = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 
@@ -23,6 +24,8 @@ var Mongo = module.exports = function(url, options) {
   this.reconnectTimeout = this.options.reconnectTimeout || 5000;
   this.connected = false;
 };
+
+Mongo.prototype = Object.create(EventEmitter.prototype);
 
 _.extend(Mongo.prototype, {
   connect: Promise.method(function() {

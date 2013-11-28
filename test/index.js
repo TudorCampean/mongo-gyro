@@ -1,4 +1,4 @@
-var Promise = require('bluebird/js/main/promise');
+var Promise = require('bluebird');
 
 global.testPromise = Promise;
 
@@ -45,6 +45,17 @@ describe("Mongo", function() {
   it("that new instance should have a localhost url by default", function() {
     expect(new Mongo().url).to.equal("mongodb://localhost:27017");
   })
+
+  it("should be able to emit and receive events", function() {
+    var mongo = new Mongo();
+    var deferred = Promise.defer();
+    mongo.on("test", function(data) { 
+      expect(data.name).to.equal(testData.name);
+      deferred.fulfill();
+    });
+    mongo.emit("test", testData);
+    return deferred.promise;
+  });
 
   it("should be able to connect to a mongodb", function() {
     var mongo = new Mongo();
