@@ -1,5 +1,5 @@
 var _          = require('lodash');
-var Promise = require('bluebird/js/main/promise')();
+var Promise = require('bluebird');
 
 var EventEmitter   = require('events').EventEmitter;
 var MongoClient    = require('mongodb').MongoClient;

@@ -35,7 +35,7 @@ var testData = {
   "name": "1234" 
 };
 
-var testTable = "test";
+var testTable = "test-mongo-gyro";
 
 describe("Mongo", function() {
   it("should be able to create a new instance", function() {
