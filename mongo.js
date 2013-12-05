@@ -161,7 +161,7 @@ _.extend(Mongo.prototype, {
   },
 
   // Count associated with findCursor
-  count: function(collectionName, query, options, callback) {
+  count: function(collectionName, query, options) {
     query = this.cast(query);
     options = options || {};
 
