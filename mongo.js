@@ -35,17 +35,20 @@ _.extend(Mongo.prototype, {
           return this._db;
         }
 
-        return this.client.connectAsync(this.url, this.options);
+        return this.client.connectAsync(this.url, this.options)
+          .bind(this)
+          .then(function(db) {
+            this._db = db;
+            this.connected = true;
+            this.setupEvents();
+            return db;
+          })
+          .caught(function(err) {
+            throw err;
+          });
       })
-      .then(function(db) {
-        this._db = db;
-        this.connected = true;
-        this.setupEvents();
-        return db;
-      })
-      .catch(function(err) {
-        console.error(err);
-        if (err !== null) throw err;
+      .caught(function(err) {
+        console.log(err);
         this._db = null;
         this.connected = false;
         return Promise.delay(this.reconnectTimeout)
@@ -59,12 +62,14 @@ _.extend(Mongo.prototype, {
 
   setupEvents: function() {
     this._db.setMaxListeners(100);
-    this._db.once('close', function() {
+    this._db.on('close', function() {
       this.connected = false;
+      this.emit("close", this.url);
     }.bind(this));
 
-    this._db.once('reconnect', function() {
+    this._db.on('reconnect', function() {
       this.connected = true;
+      this.emit("reconnect", this.url);
     }.bind(this));
   },
 
@@ -184,7 +189,6 @@ _.extend(Mongo.prototype, {
   // Find a single doc matching query
   findOne: function(collectionName, query) {
     query = this.cast(query);
-
     return this.collection(collectionName)
       .bind(this)
       .then(function(collection) {
