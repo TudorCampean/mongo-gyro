@@ -21,7 +21,7 @@ var Mongo = module.exports = function(url, options) {
   this.url = url || "mongodb://localhost:27017";
   this._db = null;
   // reconnects after 5 seconds by default
-  this.reconnectTimeout = this.options.reconnectTimeout || 5000;
+  this.reconnectTimeout = this.options.reconnectTimeout || _.random(1000, 3000);
   this.connected = false;
 };
 
@@ -41,10 +41,8 @@ _.extend(Mongo.prototype, {
             this._db = db;
             this.connected = true;
             this.setupEvents();
+            this.emit("connect", this.url);
             return db;
-          })
-          .caught(function(err) {
-            throw err;
           });
       })
       .caught(function(err) {
