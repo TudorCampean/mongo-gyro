@@ -6,8 +6,9 @@ var MongoClient    = require('mongodb').MongoClient;
 var ObjectID = require('mongodb').ObjectID;
 
 Promise.delay = function(ms) {
-  var promise = new Promise();
-  setTimeout(promise.resolve, ms);
+  var promise = new Promise(function(resolve, reject) {
+    setTimeout(resolve, ms);
+  });
   return promise;
 };
 
