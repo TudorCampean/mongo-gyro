@@ -24,6 +24,7 @@ var Mongo = module.exports = function(url, options) {
   // reconnects after 5 seconds by default
   this.reconnectTimeout = this.options.reconnectTimeout || _.random(1000, 3000);
   this.connected = false;
+  this.retries = 0;
 };
 
 Mongo.prototype = Object.create(EventEmitter.prototype);
@@ -47,13 +48,14 @@ _.extend(Mongo.prototype, {
           });
       })
       .caught(function(err) {
-        console.log(err);
+        this.emit("error", err);
         this._db = null;
         this.connected = false;
         return Promise.delay(this.reconnectTimeout)
           .bind(this)
           .then(function() {
-            console.log("Attempting to reconnect to mongodb: ", this.url);
+            this.retries++;
+            this.emit("reconnecting", this.url, this.retries, this.reconnectTimeout);
             return this.connect();
           });
       });
