@@ -60,8 +60,11 @@ describe("Mongo", function() {
   it("should be able to connect to a mongodb", function() {
     var mongo = new Mongo();
 
-    return mongo.connect().
-      then(function(db)  {
+    return mongo.connect(function(err, db) { // callback test
+        expect(err).to.be.null;
+        expect(db).to.be.ok;
+      })
+      .then(function(db)  { // promise test
         expect(db).to.be.ok;
       });
   });
@@ -85,8 +88,11 @@ describe("Mongo", function() {
 
   describe("#collection", function() {
     it("should have a collection", function() {
-      return mongo.collection("test")
-        .then(function(collection) {
+      return mongo.collection("test", 
+        function(err, collection) { //callback test
+          expect(collection).to.be.ok;
+        })
+        .then(function(collection) { //promise test
           expect(collection).to.be.ok;
         });
     });
@@ -124,16 +130,46 @@ describe("Mongo", function() {
   // these all return arrays
   describe("finders", function () {
     it("should be able to find test data", function() {
-      return mongo.find(testTable, {"name": "1234"})
-        .then(function(obj) {
+      return mongo.find(testTable, {"name": "1234"}, 
+        function(err, obj) { // callback test
+          expect(err).to.be.null;
+          expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
+          expect(obj[0].name).to.equal(testData.name);
+        })
+        .then(function(obj) { // promise test
           expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
           expect(obj[0].name).to.equal(testData.name);
         });
     });
 
+    it("should be able to find test data with a sort in options", function() {
+      var creation_date = new Date().getTime();
+
+      return mongo.insert(testTable, {"name": "4321" })
+        .then(function() {
+          return mongo.find(testTable, {}, { sort: { "name": -1 } },
+            function(err, obj) { // callback test
+              expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
+              expect(mongo.isValidObjectID(obj[1]._id)).to.be.ok;
+              expect(obj[0].name).to.equal("4321");
+              expect(obj[1].name).to.equal("1234");
+            });
+        })
+        .then(function(obj) { // promise test
+          expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
+          expect(mongo.isValidObjectID(obj[1]._id)).to.be.ok;
+          expect(obj[0].name).to.equal("4321");
+          expect(obj[1].name).to.equal("1234");
+        });
+    });
+
     it("should be able to find test data", function() {
-      return mongo.findOne(testTable, {"name": "1234"})
-        .then(function(obj) {
+      return mongo.findOne(testTable, {"name": "1234"}, 
+        function(err, obj) { // callback test
+          expect(mongo.isValidObjectID(obj._id)).to.be.ok;
+          expect(obj.name).to.equal(testData.name);
+        })
+        .then(function(obj) { // promise test
           expect(mongo.isValidObjectID(obj._id)).to.be.ok;
           expect(obj.name).to.equal(testData.name);
         });
@@ -142,8 +178,12 @@ describe("Mongo", function() {
 
   describe("insert", function() {
     it("should be able to insert test data", function() {
-      return mongo.insert(testTable, {"name": "1234"})
-        .then(function(obj) {
+      return mongo.insert(testTable, {"name": "1234"}, 
+        function(err, obj) {  // callback
+          expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
+          expect(obj[0].name).to.equal(testData.name);
+        })
+        .then(function(obj) {  // promise  
           expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
           expect(obj[0].name).to.equal(testData.name);
         });
@@ -156,9 +196,12 @@ describe("Mongo", function() {
         .then(function(obj) {
           obj.name = "4321";
 
-          return mongo.update(testTable, { _id: obj._id }, { "$set": { "name": obj.name }});
+          return mongo.update(testTable, { _id: obj._id }, { "$set": { "name": obj.name } },
+            function(err, updateObj) {  // callback
+              expect(updateObj[1].ok).to.equal(1);
+            });
         })
-        .then(function(updateObj) {
+        .then(function(updateObj) { // promise
           expect(updateObj[1].ok).to.equal(1);
         });
     });
@@ -170,9 +213,12 @@ describe("Mongo", function() {
         .then(function(obj) {
           obj.name = "4321";
 
-          return mongo.findAndModify(testTable, { _id: obj._id }, { "$set": { "name": obj.name }});
+          return mongo.findAndModify(testTable, { _id: obj._id }, { "$set": { "name": obj.name } },
+            function(err, updateObj) {  // callback
+              expect(updateObj.name).to.equal("4321");
+            });
         })
-        .then(function(updateObj) {
+        .then(function(updateObj) { // promise
           expect(updateObj.name).to.equal("4321");
         });
     });
@@ -182,9 +228,12 @@ describe("Mongo", function() {
     it("should be able to remove objects", function() {
       return mongo.findOne(testTable, { "name": "4321" })
         .then(function(obj) {
-          return mongo.remove(testTable, { _id: obj._id });
+          return mongo.remove(testTable, { _id: obj._id },
+            function(err, updateObj) { // callback
+              expect(updateObj).to.be.ok;
+            });
         })
-        .then(function(updateObj) {
+        .then(function(updateObj) { // promise
           expect(updateObj).to.be.ok;
         });
     });
@@ -192,19 +241,21 @@ describe("Mongo", function() {
 
   describe("aggregate", function() {
     it("should be able to run an aggregate function", function() {
-      return mongo.insert(testTable, {"name": "1234", "value": 5})
+      return mongo.insert(testTable, {"name": "1234567890", "value": 5})
         .then(function(obj) {
           return mongo.aggregate(testTable, {
-            "$match": { "name": "1234" },
+            "$match": { "name": "1234567890" },
             "$group": { 
               _id: "agg", 
               "total":  {
                 "$sum": "$value" 
               }
             }
+          }, function(err, obj) { // callback
+            expect(obj[0].total).to.equal(5);
           });
         })
-        .then(function(obj) {
+        .then(function(obj) { // promise
           expect(obj[0].total).to.equal(5);
         });
     });
@@ -212,8 +263,11 @@ describe("Mongo", function() {
 
   describe("Sequence", function() {
     it("should be able to increment", function() {
-      return mongo.getNextSequence("test_seq", { "name": "1234"}, { upsert: true })
-        .then(function(seq) {
+      return mongo.getNextSequence("test_seq", { "name": "1234"}, { upsert: true }, 
+        function(err, seq) { // callback
+          expect(seq).to.be.ok;
+        })
+        .then(function(seq) { // promise
           // greater than 0 is acceptable
           expect(seq).to.be.ok;
         });
@@ -222,7 +276,10 @@ describe("Mongo", function() {
 
   describe("EnsureIndex", function() {
     it("should be able to create an index", function() {
-      return mongo.ensureIndex(testTable, "name")
+      return mongo.ensureIndex(testTable, "name",
+        function(err, obj) {
+          expect(obj).to.be.undefined;
+        })
         .then(function(obj) {
           // doesn't return a value....
           expect(obj).to.be.undefined;
@@ -232,7 +289,10 @@ describe("Mongo", function() {
 
   describe("DropIndex", function() {
     it("should be able to drop indexes", function() {
-      return mongo.dropIndexes(testTable, "name")
+      return mongo.dropIndexes(testTable, "name", 
+        function(err, obj) {
+          expect(obj).to.be.true;
+        })
         .then(function(obj) {
           expect(obj).to.be.true;
         });
