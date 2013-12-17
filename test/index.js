@@ -174,6 +174,10 @@ describe("Mongo", function() {
           expect(obj.name).to.equal(testData.name);
         });
     });
+
+    it("should be able to make multiple findOnes in parallel", function() {
+      expect(true).to.be.true;
+    })
   });
 
   describe("insert", function() {

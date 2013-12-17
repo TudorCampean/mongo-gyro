@@ -32,7 +32,8 @@ _.extend(Mongo.prototype, {
     var args = [].slice.call(arguments);
     var callback = typeof args[args.length - 1] == 'function' && args.pop();
 
-    return Promise.bind(this)
+    return Promise
+      .bind(this)
       .then(function() {
         if(this.connection === "connected") {
           callback && callback(null, this._db);
@@ -41,26 +42,28 @@ _.extend(Mongo.prototype, {
           return Promise.delay(this.reconnectTimeout)
             .bind(this)
             .then(function() {
+              console.log("Delaying connection");
               return this.connect(callback);
             });
         }
 
         this.connection = "connecting";
-        return this.client.connectAsync(this.url, this.options);
-      })
-      .then(function(db) {
-        this._db = db;
-        this.connection = "connected";
-        this.setupEvents();
-        this.emit("connect", this.url);
-        callback && callback(null, db);
-        return db;
-      })
-      .caught(function(err) {
-        this.emit("error", err);
-        this.connection = "disconnected";
-        callback && callback(err);
-        throw err;
+        return this.client.connectAsync(this.url, this.options)
+          .bind(this)
+          .then(function(db) {
+            this._db = db;
+            this.emit("connect", this.url);
+            this.connection = "connected";
+            this.setupEvents();
+            callback && callback(null, db);
+            return db;
+          })
+          .caught(function(err) {
+            this.emit("error", err);
+            this.connection = "disconnected";
+            callback && callback(err);
+            throw err;
+          });
       });
   }),
 
