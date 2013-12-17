@@ -53,9 +53,8 @@ _.extend(Mongo.prototype, {
             this._db = db;
             this.emit("connect", this.url);
             this.connection = "connected";
-            this.setupEvents();
             callback && callback(null, db);
-            return db;
+            return this._db;
           })
           .caught(function(err) {
             this.emit("error", err);
@@ -66,38 +65,16 @@ _.extend(Mongo.prototype, {
       });
   }),
 
-  setupEvents: function() {
-    this._db.setMaxListeners(100);
-    this._db.on('close', function() {
-      this.connected = false;
-      this.emit("close", this.url);
-    }.bind(this));
-
-    this._db.on('reconnect', function() {
-      this.connected = true;
-      this.emit("reconnect", this.url);
-    }.bind(this));
-  },
-
   collection: Promise.method(function(collectionName) {
     var args = [].slice.call(arguments);
     var callback = typeof args[args.length - 1] == 'function' && args.pop();
 
-    return Promise
+    return this.connect()
       .bind(this)
       .then(function() {
-        if(this.connected) {
-          callback && callback(null, this._db.collection(collectionName));
-          return this._db;
-        }
-
-        return this.connect();
-      })
-      .then(function() {
         var collection = this._db.collection(collectionName);
-        // gives promises to collection
         Promise.promisifyAll(collection);
-        callback && callback(null, this._db);
+        callback && callback(null, collection);
         return collection;
       })
       .caught(function(err) {
@@ -446,6 +423,23 @@ _.extend(Mongo.prototype, {
         throw err;
       });
   },
+  
+  // Erases all records from a collection, if any
+  eraseCollection: function(collectionName) {
+    var args = [].slice.call(arguments);
+    var callback = typeof args[args.length - 1] == 'function' && args.pop();
+
+    return this.remove(collectionName, {})
+      .then(function(data) {
+        callback && callback(null, data);
+        return data;
+      })
+      .caught(function(err) {
+        this.emit("error", err);
+        if(callback) { callback(err); }
+        throw err;
+      });
+  },
 
   // Indexes
   ensureIndex: function(collectionName, index) {
@@ -457,23 +451,6 @@ _.extend(Mongo.prototype, {
       .then(function(collection) {
         collection.ensureIndexAsync(index);
       }).then(function(data) {
-        callback && callback(null, data);
-        return data;
-      })
-      .caught(function(err) {
-        this.emit("error", err);
-        if(callback) { callback(err); }
-        throw err;
-      });
-  },
-
-  // Erases all records from a collection, if any
-  eraseCollection: function(collectionName) {
-    var args = [].slice.call(arguments);
-    var callback = typeof args[args.length - 1] == 'function' && args.pop();
-
-    return this.remove(collectionName, {})
-      .then(function(data) {
         callback && callback(null, data);
         return data;
       })
