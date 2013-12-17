@@ -21,10 +21,8 @@ var Mongo = module.exports = function(url, options) {
   this.client = MongoClient;
   this.url = url || "mongodb://localhost:27017";
   this._db = null;
-  // reconnects after 5 seconds by default
-  this.reconnectTimeout = this.options.reconnectTimeout || _.random(1000, 3000);
-  this.connected = false;
-  // this.retries = 0;
+  this.connection = "disconnected";
+  this.reconnectTimeout = this.options.reconnectTimeout || 500;
 };
 
 Mongo.prototype = Object.create(EventEmitter.prototype);
@@ -36,33 +34,34 @@ _.extend(Mongo.prototype, {
 
     return Promise.bind(this)
       .then(function() {
-        if(this.connected) {
+        if(this.connection === "connected") {
           callback && callback(null, this._db);
           return this._db;
+        } else if(this.connection === "connecting") {
+          return Promise.delay(this.reconnectTimeout)
+            .bind(this)
+            .then(function() {
+              return this.connect(callback);
+            });
         }
 
-        return this.client.connectAsync(this.url, this.options)
+        this.connection = "connecting";
+        return this.client.connectAsync(this.url, this.options);
       })
       .then(function(db) {
         this._db = db;
-        this.connected = true;
+        this.connection = "connected";
         this.setupEvents();
         this.emit("connect", this.url);
         callback && callback(null, db);
         return db;
+      })
+      .caught(function(err) {
+        this.emit("error", err);
+        this.connection = "disconnected";
+        callback && callback(err);
+        throw err;
       });
-      // .caught(function(err) {
-      //   this.emit("error", err);
-      //   this._db = null;
-      //   this.connected = false;
-      //   return Promise.delay(this.reconnectTimeout)
-      //     .bind(this)
-      //     .then(function() {
-      //       this.retries++;
-      //       this.emit("reconnecting", this.url, this.retries, this.reconnectTimeout);
-      //       return this.connect(callback);
-      //     });
-      // });
   }),
 
   setupEvents: function() {
