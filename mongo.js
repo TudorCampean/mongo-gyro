@@ -42,7 +42,6 @@ _.extend(Mongo.prototype, {
           return Promise.delay(this.reconnectTimeout)
             .bind(this)
             .then(function() {
-              console.log("Delaying connection");
               return this.connect(callback);
             });
         }

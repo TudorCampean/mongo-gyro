@@ -1,6 +1,6 @@
 {
   "name": "mongo-gyro",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "A lightweight wrapper for MongoDB using promises",
   "main": "mongo.js",
   "scripts": {
