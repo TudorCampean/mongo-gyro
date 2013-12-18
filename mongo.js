@@ -291,7 +291,6 @@ _.extend(Mongo.prototype, {
     var callback = typeof args[args.length - 1] == 'function' && args.pop();
     var options = args.length > 3 && typeof args[args.length - 1] == 'object' && args.pop();
 
-
     query = this.cast(query);
     obj = this.cast(obj);
     options = _.extend({ safe: true }, options || {}); // force safe mode
@@ -300,6 +299,15 @@ _.extend(Mongo.prototype, {
       .bind(this)
       .then(function(collection) {
         return collection.updateAsync(query, obj, options);
+      })
+      .then(function(data) {
+        callback && callback(null, data);
+        return data;
+      })
+      .caught(function(err) {
+        this.emit("error", err);
+        if(callback) { callback(err); }
+        throw err;
       });
   },
 
