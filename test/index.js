@@ -175,8 +175,29 @@ describe("Mongo", function() {
         });
     });
 
-    it("should be able to make multiple findOnes in parallel", function() {
-      expect(true).to.be.true;
+    it("should be able to make multiple finds in parallel without breaking -- should wait for connection", function() {
+      // create a new mongo
+      var mongo = new Mongo();
+
+      var testFind = function() {
+        return mongo.findOne(testTable, {"name": "1234"})
+          .then(function(obj) { // promise test
+            expect(mongo.isValidObjectID(obj._id)).to.be.ok;
+            expect(obj.name).to.equal(testData.name);
+            return obj;
+          });
+      }
+
+      var fns = [];
+
+      for(var i = 0; i < 10; i++) {
+        fns.push(testFind());
+      }
+
+      return Promise.all(fns)
+        .then(function(results) {
+          results.length.should.equal(10);
+        });
     })
   });
 

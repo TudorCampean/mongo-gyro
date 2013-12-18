@@ -423,7 +423,7 @@ _.extend(Mongo.prototype, {
         throw err;
       });
   },
-  
+
   // Erases all records from a collection, if any
   eraseCollection: function(collectionName) {
     var args = [].slice.call(arguments);
