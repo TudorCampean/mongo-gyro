@@ -1,4 +1,4 @@
 mongo-gyro
 ==========
 
-Lite weight mongo wrapper
+Lite weight mongo "wrap"per
