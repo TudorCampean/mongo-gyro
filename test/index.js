@@ -310,6 +310,20 @@ describe("Mongo", function() {
           expect(obj).to.be.undefined;
         });
     });
+
+    it("should be able to create a unique index", function() {
+      return mongo.ensureIndex(testTable, "email", {"unique": 1})
+        .then(function(obj) { //pr
+          expect(obj).to.be.undefined;
+          return mongo.insert(testTable, { "email": "blah@blah.com" });
+        })
+        .then(function() {
+          return mongo.insert(testTable, {"email": "blah@blah.com"});
+        })
+        .caught(function(err) {
+          expect(err).to.be.ok;
+        });
+    });
   });
 
   describe("DropIndex", function() {

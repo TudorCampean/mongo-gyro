@@ -453,11 +453,13 @@ _.extend(Mongo.prototype, {
   ensureIndex: function(collectionName, index) {
     var args = [].slice.call(arguments);
     var callback = typeof args[args.length - 1] == 'function' && args.pop();
+    var options = args.length > 2 && typeof args[args.length - 1] == 'object' && args.pop();
+    options = options || {};
 
     return this.collection(collectionName)
       .bind(this)
       .then(function(collection) {
-        collection.ensureIndexAsync(index);
+        collection.ensureIndexAsync(index, options);
       }).then(function(data) {
         callback && callback(null, data);
         return data;
