@@ -163,6 +163,38 @@ describe("Mongo", function() {
         });
     });
 
+    it("should be able to find test data with a limit in options", function() {
+      var creation_date = new Date().getTime();
+
+      return mongo.insert(testTable, {"name": "4321" })
+        .then(function() {
+          return mongo.find(testTable, {}, { sort: { "name": -1 }, limit: 1 });
+        })
+        .then(function(obj) { // promise test
+          expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
+          expect(obj.length).to.equal(1);
+          expect(obj[1]).to.not.be.ok;
+          expect(obj[0].name).to.equal("4321");
+        });
+    });
+
+    it("should be able to find test data with a limit in options", function() {
+      var creation_date = new Date().getTime();
+
+      return mongo.insert(testTable, { "name": "54321" })
+        .then(function() {
+          return mongo.insert(testTable, { "name": "54320" });
+        })
+        .then(function() {
+          return mongo.find(testTable, {}, { sort: { "name": -1 }, limit: 1, skip: 1 });
+        })
+        .then(function(obj) { // promise test
+          expect(mongo.isValidObjectID(obj[0]._id)).to.be.ok;
+          expect(obj[1]).to.not.be.ok;
+          expect(obj[0].name).to.equal("54320");
+        });
+    });
+
     it("should be able to find test data", function() {
       return mongo.findOne(testTable, {"name": "1234"}, 
         function(err, obj) { // callback test
