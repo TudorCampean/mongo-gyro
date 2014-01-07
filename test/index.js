@@ -195,6 +195,24 @@ describe("Mongo", function() {
         });
     });
 
+    it("should be able to paginate test data with a limit in options", function() {
+      var creation_date = new Date().getTime();
+      var limit = 5;
+
+      return mongo.insert(testTable, { "name": "54321" })
+        .then(function() {
+          return mongo.insert(testTable, { "name": "54320" });
+        })
+        .then(function() {
+          return mongo.pagination(testTable, {}, { limit: limit, skip: 1 });
+        })
+        .then(function(obj) { // promise test
+          expect(obj).to.not.be.undefined;
+          expect(obj.count).to.equal(limit);
+          expect(obj.total > 0).to.be.ok; 
+        });
+    });
+
     it("should be able to find test data", function() {
       return mongo.findOne(testTable, {"name": "1234"}, 
         function(err, obj) { // callback test

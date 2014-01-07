@@ -233,6 +233,43 @@ _.extend(Mongo.prototype, {
       });
   },
 
+  pagination: function(collectionName, query) {
+    var args = [].slice.call(arguments);
+    var callback = typeof args[args.length - 1] == 'function' && args.pop();
+    var options = args.length > 2 && typeof args[args.length - 1] == 'object' && args.pop();
+
+    options = options || {};
+
+    query = this.cast(query);
+
+    return this.connect()
+      .bind(this)
+      .then(function() {
+        return this.count(collectionName, query, options);
+      })
+      .then(function(total) {
+        var count = ((options.limit) && (options.limit <= total)) ? options.limit: total;
+        var limit = options.limit || 0;
+        var skip = options.skip || 0;
+
+        var obj = {
+          total: parseInt(total),
+          count: parseInt(count),
+          limit: parseInt(limit),
+          offset: parseInt(skip),
+          has_more: parseInt(count) < parseInt(total)
+        };
+
+        callback && callback(null, obj);
+        return obj;
+      })
+      .caught(function(err) {
+        this.emit("error", err);
+        if(callback) { callback(err); }
+        throw err;
+      });
+  },
+
   // Find a single doc matching query
   findOne: function(collectionName, query) {
     var args = [].slice.call(arguments);
@@ -329,6 +366,7 @@ _.extend(Mongo.prototype, {
     return this.collection(collectionName)
       .bind(this)
       .then(function(collection) {
+        console.log(obj);
         return collection.findAndModifyAsync(query, sort, obj, options);
       })
       .then(function(response) {
