@@ -145,7 +145,6 @@ _.extend(Mongo.prototype, {
       delete options.fields;
       cursor = this._db.collection(collectionName).find(query, fields, options);
     } else {
-      console.log(options);
       cursor = this._db.collection(collectionName).find(query, options);
     }
 
@@ -156,7 +155,7 @@ _.extend(Mongo.prototype, {
   // Find with a cursor, can pass in options.fields and get specific fields
   findCursor: function(collectionName, query) {
     var args = [].slice.call(arguments);
-    console.log(args);
+
     var callback = typeof args[args.length - 1] == 'function' && args.pop();
     var options = ((args.length > 2 && typeof args[args.length - 1] == 'object') && args.pop());
 
@@ -369,7 +368,6 @@ _.extend(Mongo.prototype, {
     return this.collection(collectionName)
       .bind(this)
       .then(function(collection) {
-        console.log(obj);
         return collection.findAndModifyAsync(query, sort, obj, options);
       })
       .then(function(response) {
