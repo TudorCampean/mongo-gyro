@@ -1,6 +1,6 @@
 {
   "name": "mongo-gyro",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "description": "A lightweight wrapper for MongoDB using promises",
   "main": "mongo.js",
   "scripts": {
@@ -16,9 +16,9 @@
     "mongodb"
   ],
   "dependencies": {
-    "bluebird": "~1.1.1",
+    "bluebird": "~1.2.1",
     "lodash": "~2.4.1",
-    "mongodb": "1.4.0-rc10"
+    "mongodb": "~1.4.0"
   },
   "devDependencies": {
     "mocha": "~1.14.0",
